@@ -134,3 +134,24 @@ Steps: 36718
 ```
 "proof": "0000d3681725e7479ee6e1065b96257916e218b0dcdfb5df02ebd204d9e45b42"
 ```
+
+## Stress Testing
+
+For stress testing of server we can use [Grafana k6](https://k6.io/) tool with TCP plugin [xk6-tcp](https://github.com/NAlexandrov/xk6-tcp).
+
+For stress testing of client we use `expect` with script "test_client.sh":
+
+For example
+```shell
+chmod +x test_client.sh
+
+```
+
+```shell
+./test_client.sh 
+```
+
+Stress test
+```shell
+./stress_test_client.sh 
+```
