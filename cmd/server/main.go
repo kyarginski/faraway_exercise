@@ -11,6 +11,7 @@ import (
 
 	"faraway/internal/config"
 	"faraway/internal/lib/logger/sl"
+	"faraway/internal/lib/pow"
 	"faraway/internal/reader"
 )
 
@@ -80,35 +81,43 @@ func handleClient(log *slog.Logger, conn net.Conn, reader reader.WisdomReader, w
 	defer conn.Close()
 	defer wg.Done()
 
-	log.Info("Client connected:", conn.RemoteAddr())
+	log.Info("Client connected:", "client", conn.RemoteAddr())
 
-	// Send request to server.
-	message, err := prepareWordOfWisdom(reader)
-	if err != nil {
-		log.Error("prepare Word Of Wisdom error:", "error", err.Error())
-		return
-	}
-
-	_, err = conn.Write(message)
+	// Generating a PoW task for the client.
+	nonce := pow.GetNonce()
+	log.Info("Sending PoW task:", "nonce", nonce)
+	_, err := conn.Write([]byte(nonce))
 	if err != nil {
 		log.Error("Sending error:", "error", err.Error())
 		return
 	}
-	log.Debug("Sent data ", "message", string(message))
 
-	for {
-		buffer := make([]byte, 1024)
-		n, err := conn.Read(buffer)
+	// Waiting for a PoW solution from the client.
+	buffer := make([]byte, 1024)
+	n, err := conn.Read(buffer)
+	if err != nil {
+		log.Error("Error reading PoW solution:", "error", err.Error())
+		return
+	}
+	proof := string(buffer)
+	log.Info("Received PoW solution:", "proof", proof[:n])
+
+	if pow.ProofOfWorkIsValid(proof) {
+		// PoW is correct, send the response to the client.
+		message, err := prepareWordOfWisdom(reader)
 		if err != nil {
-			log.Info("Client disconnected:", conn.RemoteAddr())
+			log.Error("prepare Word Of Wisdom error:", "error", err.Error())
 			return
 		}
-		log.Debug("Received data from", conn.RemoteAddr(), string(buffer)[:n])
-
-		_, err = conn.Write(buffer)
+		_, err = conn.Write(message)
 		if err != nil {
+			log.Error("Sending error:", "error", err.Error())
 			return
 		}
+		log.Debug("Sent data ", "message", string(message))
+		log.Info("Client verified and served.")
+	} else {
+		log.Error("PoW validation failed. Disconnecting client.")
 	}
 }
 
