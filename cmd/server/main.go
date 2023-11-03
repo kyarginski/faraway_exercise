@@ -102,7 +102,7 @@ func handleClient(log *slog.Logger, conn net.Conn, reader reader.WisdomReader, w
 	proof := string(buffer)
 	log.Info("Received PoW solution:", "proof", proof[:n])
 
-	if pow.ProofOfWorkIsValid(proof) {
+	if pow.ProofOfWorkIsValid(nonce, proof) {
 		// PoW is correct, send the response to the client.
 		message, err := prepareWordOfWisdom(reader)
 		if err != nil {

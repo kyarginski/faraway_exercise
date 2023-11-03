@@ -16,6 +16,27 @@ The client manages to find a value (nonce), which, when combined with the data, 
 You can complicate the calculations by increasing the number of zeros.
 Currently, 4 zeros are used for clarity, but you can use more zeros when searching for problems.
 
+### Algorithm
+
+```plantuml
+@startuml
+
+'hide footbox
+autonumber "<b>[0]"
+
+participant Client
+participant Server
+
+Client --> Server: << Request service >>
+Server --> Client: << Challenge (nonce) >>
+Client --> Client: << Calculate hash >>
+Client --> Server: << Response hash >>
+Server --> Server: << Check hash >>
+Server --> Client: << Grant service (response data) >>
+
+@enduml
+```
+
 ### Settings
 
 Set environment variables:

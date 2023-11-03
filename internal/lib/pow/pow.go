@@ -4,14 +4,32 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"math"
 	"math/rand"
 	"strings"
 	"time"
 )
 
-func ProofOfWorkIsValid(proof string) bool {
-	return strings.HasPrefix(proof, "0000")
+const HashPrefix = "0000"
+
+func ProofOfWorkIsValid(nonce, proof string) bool {
+	steps := 0
+	hash := ""
+	for i := 0; i < math.MaxInt; i++ {
+		attempt := fmt.Sprintf("%s%d", nonce, steps)
+		hash = sha256Hash(attempt)
+		if IsPrefixValid(hash) {
+			break
+		}
+		steps++
+	}
+
+	return proof[:len(hash)] == hash
+}
+
+func IsPrefixValid(proof string) bool {
+	return strings.HasPrefix(proof, HashPrefix)
 }
 
 func GetNonce() string {
@@ -35,10 +53,16 @@ func FindProofOfWork(nonce string) string {
 		hashBytes := h.Sum(nil)
 		hash := hex.EncodeToString(hashBytes)
 
-		if ProofOfWorkIsValid(hash) {
+		if IsPrefixValid(hash) {
 			proof = hash
 			break
 		}
 	}
 	return proof
+}
+
+func sha256Hash(input string) string {
+	hash := sha256.New()
+	io.WriteString(hash, input)
+	return hex.EncodeToString(hash.Sum(nil))
 }
